@@ -11,6 +11,8 @@ bot = telebot.TeleBot(KEY)
 username= ""
 password=""
 
+URL = "http://127.0.0.1:5000"
+
 def force_reply():
     reply = ForceReply()
     reply.input_field_placeholder = "Username and password with ,"
@@ -28,7 +30,7 @@ def password_handler(message):
     global password
     password = message.text
     bot.send_message(message.chat.id, f"Your password is {password}")
-    requests.post("http://10.10.10.175:5000/driver", json={"username": username, "password": password, "chatid": message.chat.id})
+    requests.post(f"{URL}/driver", json={"username": username, "password": password, "chatid": message.chat.id})
 
 
 
@@ -56,7 +58,7 @@ def send_unseen_emails(message, allEmails, newEmailIDs):
 @bot.message_handler(func=lambda message: True)
 def recieve_cred(message):
     username_input = message.text
-    requests.post("http://10.10.10.175:5000/captcha", json={"captcha":username_input })
+    requests.post(f"{URL}/captcha", json={"captcha":username_input })
         
 
 
