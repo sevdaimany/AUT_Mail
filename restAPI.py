@@ -16,18 +16,18 @@ app = Flask(__name__)
 api = Api(app)
 
 PATH_TO_DRIVER = '../SeleniumDrivers/chromedriver.exe'
-url = "https://webmail.aut.ac.ir"
+URL = "https://webmail.aut.ac.ir"
 checkIn = False
 KEY = "5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw"
 
+driver = webdriver.Chrome(executable_path=PATH_TO_DRIVER)
 
 
 
 
 @app.route('/driver', methods=['POST'])
 def start():
-    driver = webdriver.Chrome(executable_path=PATH_TO_DRIVER, thread=True)
-    driver.get(url)
+    driver.get(URL)
 
     userinfo = request.json
     USERNAME = userinfo["username"]
@@ -42,13 +42,13 @@ def start():
     rand = str(random.randint(1,10000))
     
     get_captcha(rand, driver)
-    r = requests.post(f"https://api.telegram.org/bot{KEY}" ,json={
-    'method':'sendPhoto',
-    'chat_id':chatID,
-    'photo':open(f"{rand}.png", "rb"),
-    })
     
-    f = requests.post(f"https://api.telegram.org/bot{KEY}" ,json={
+    data = {"chat_id": chatID}
+    url = "https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw/sendPhoto" 
+    with open(f"{rand}.png", "rb") as image_file:
+        ret = requests.post(url, data=data, files={"photo": image_file})
+    
+    f = requests.post("https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw" ,data={
     'method':'sendMessage',
     'chat_id':chatID,
     'text':"Please the captcha",
@@ -58,7 +58,7 @@ def start():
 
 @app.route('/captcha', methods=['POST'])
 def captcha():
-    captcha_input = jsonify(request.json)["captcha"]
+    captcha_input = request.json["captcha"]
     print(captcha_input)
     
 def get_captcha(name, driver):
@@ -67,5 +67,7 @@ def get_captcha(name, driver):
     captcha.screenshot(f"{name}.png")
 
 
+# app.run(debug=True)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run(debug=True)
