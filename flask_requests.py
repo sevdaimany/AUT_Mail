@@ -1,12 +1,10 @@
-from pickle import GLOBAL
-from webbrowser import get
 from flask import Flask
-from flask_restful import Resource, Api, reqparse
-from flask import  request, jsonify
+from flask_restful import  Api
+from flask import  request
 import requests
 import random
 import json
-import time
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 api = Api(app)
@@ -22,8 +20,6 @@ def start():
     USERNAME = userinfo["username"]
     PASS = userinfo["password"]
     chatID = userinfo["chatid"]
-    
-    print("chatID,    ", chatID)
     
     info["username"] = USERNAME
     info["password"] = PASS
@@ -46,6 +42,17 @@ def start():
      
     send_message("Please Enter the captcha")   
     return "DONE", 200
+
+ 
+    
+      
+@app.route('/captcha', methods=["POST"])
+def captcha():
+    captcha_input = request.json["captcha"]
+    info["captcha_text"] = captcha_input
+    send_emails()
+    return captcha_input, 200
+
   
 def get_all_emails():
     login = requests.post(info["url"], data=info["payload"], headers=info["header"])
@@ -70,11 +77,8 @@ def login():
         send_message("/newInfo - to correct your inforamtion")
         return "None"
     else:
-        print('header', login.headers)
         h = login.text[-230:].split('src="')[1].split("&")[0]
-        print("h    ," ,h)
         hmail = login.history[0].headers["Set-Cookie"].split(";")[0].split("=")[1]
-        print("hmail    ,", hmail)
         rebuiltCookie = f"passwordExpireWarning=true;displayMoreContent=false;theme=breeze;readingPane=east;_hmail={hmail};_captchaid={info['captcha_id']};public_language=en"
         header = {"cookie": rebuiltCookie, "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}  
         payload = {"folderId":"84729550_134979500", "start":0, "limit":50, "sort":"receivedDateUTC", "dir":"DESC", "operation":"MailList"} 
@@ -116,16 +120,20 @@ def send_emails():
         newEmailIDs = list(set(ids).difference(set(info["database"])))
         info["database"] = ids
         send_unseen_emails(all_emails, newEmailIDs)
+        scheduler.start()
+
+
+def check_for_new_email():
+    all_emails = get_all_emails()
+    ids = get_email_ids(all_emails)
+    newEmailIDs = list(set(ids).difference(set(info["database"])))
+    info["database"] = ids
+    send_unseen_emails(all_emails, newEmailIDs)
+
+
+scheduler = BackgroundScheduler()
+job = scheduler.add_job(check_for_new_email, 'interval', minutes=5)   
     
-    
-      
-@app.route('/captcha', methods=["POST"])
-def captcha():
-    captcha_input = request.json["captcha"]
-    info["captcha_text"] = captcha_input
-    send_emails()
-    return captcha_input, 200
-   
 
 if __name__ == '__main__':
     app.run(debug=True)
