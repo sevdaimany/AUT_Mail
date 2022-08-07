@@ -23,24 +23,14 @@ def start():
     
     info["username"] = USERNAME
     info["password"] = PASS
+    info["chat_id"] = chatID
     
     #Get captcha from webmail
-    rand = str(random.randint(1,10000))
-    r1 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=isRequired&username={USERNAME}")
-    r2 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=show&username={USERNAME}")
-    info["captcha_id"] = r2.headers['Set-Cookie'].split(";")[0].split("=")[1]
-    info["chat_id"] = chatID
-    file = open(f"./captcha/{rand}.png", "wb")
-    file.write(r2.content)
-    file.close()
+    captcha_filename = get_captcha()
 
     #Send captcha to bot
-    data = {"chat_id": chatID}
-    url = "https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw/sendPhoto" 
-    with open(f"./captcha/{rand}.png", "rb") as image_file:
-        ret = requests.post(url, data=data, files={"photo": image_file})
+    send_captcha(captcha_filename)
      
-    send_message("Please Enter the captcha")   
     return "DONE", 200
 
  
@@ -53,13 +43,34 @@ def captcha():
     send_emails()
     return captcha_input, 200
 
-  
+
+def get_captcha():
+    rand = str(random.randint(1,10000))
+    r1 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=isRequired&username={info['username']}")
+    r2 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=show&username={info['username']}")
+    info["captcha_id"] = r2.headers['Set-Cookie'].split(";")[0].split("=")[1]
+    file = open(f"./captcha/{rand}.png", "wb")
+    file.write(r2.content)
+    file.close()
+    return rand
+    
+def send_captcha(filename):
+    data = {"chat_id": info["chat_id"]}
+    url = "https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw/sendPhoto" 
+    with open(f"./captcha/{filename}.png", "rb") as image_file:
+        ret = requests.post(url, data=data, files={"photo": image_file})  
+    send_message("Please Enter the captcha")  
+    
+    
 def get_all_emails():
     login = requests.post(info["url"], data=info["payload"], headers=info["header"])
-    returned = "{" + '"MailObject" :' +  login.text[112:] 
-    returned = json.loads(returned)
-    allEmails = returned["MailObject"]
-    return allEmails
+    if "Set-Cookie" in dict(login.headers).keys():
+        return "Not login"
+    else:
+        returned = "{" + '"MailObject" :' +  login.text[112:] 
+        returned = json.loads(returned)
+        allEmails = returned["MailObject"]
+        return allEmails
   
 def login():
     data = {
@@ -125,10 +136,15 @@ def send_emails():
 
 def check_for_new_email():
     all_emails = get_all_emails()
-    ids = get_email_ids(all_emails)
-    newEmailIDs = list(set(ids).difference(set(info["database"])))
-    info["database"] = ids
-    send_unseen_emails(all_emails, newEmailIDs)
+    if all_emails == "Not login":
+        captcha_filename = get_captcha()
+        send_captcha(captcha_filename)
+        
+    else:
+        ids = get_email_ids(all_emails)
+        newEmailIDs = list(set(ids).difference(set(info["database"])))
+        info["database"] = ids
+        send_unseen_emails(all_emails, newEmailIDs)
 
 
 scheduler = BackgroundScheduler()
