@@ -11,7 +11,10 @@ api = Api(app)
 
 URL = "https://webmail.aut.ac.ir"
 checkIn = False
-KEY = "5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw"
+
+with open("TOKEN.txt", 'r') as f:
+    KEY = f.read()
+# KEY = "5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw"
 info = {"database":[]}
 
 @app.route('/driver', methods=["POST"])
@@ -56,7 +59,7 @@ def get_captcha():
     
 def send_captcha(filename):
     data = {"chat_id": info["chat_id"]}
-    url = "https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw/sendPhoto" 
+    url = f"https://api.telegram.org/bot{KEY}/sendPhoto" 
     with open(f"./captcha/{filename}.png", "rb") as image_file:
         ret = requests.post(url, data=data, files={"photo": image_file})  
     send_message("Please Enter the captcha")  
@@ -103,7 +106,7 @@ def login():
     
 
 def send_message(text):
-    f = requests.post("https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw/sendMessage" ,json={
+    f = requests.post(f"https://api.telegram.org/bot{KEY}/sendMessage" ,json={
             'chat_id':info["chat_id"],
             'text':text,
             })

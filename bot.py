@@ -3,10 +3,11 @@ import telebot
 from telebot.types import ForceReply
 from bs4 import BeautifulSoup as bs
 import requests
-import json
 
 
-KEY = "5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw"
+with open("TOKEN.txt", 'r') as f:
+    KEY = f.read()
+
 bot = telebot.TeleBot(KEY)
 username= ""
 password=""
