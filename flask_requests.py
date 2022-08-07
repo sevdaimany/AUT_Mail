@@ -119,7 +119,7 @@ def get_email_ids(allEmails):
 def send_unseen_emails(allEmails, newEmailIDs):
     for email in allEmails:
         if email["isSeen"] == "no" and (email["id"] in newEmailIDs):
-            text = f"From : {email['from']}\nSubject : {email['subject']}\nSnippet : {email['snippet']}\nDate: {email['date']}"
+            text = f"👀From:\n {email['from'].split('<')[0]}\n\n📩Subject:\n {email['subject']}\n\n📃Snippet:\n {email['snippet']}\n📆Date:\n {email['date']}"
             send_message(text)
 
 def send_emails():
@@ -139,7 +139,6 @@ def check_for_new_email():
     if all_emails == "Not login":
         captcha_filename = get_captcha()
         send_captcha(captcha_filename)
-        
     else:
         ids = get_email_ids(all_emails)
         newEmailIDs = list(set(ids).difference(set(info["database"])))
