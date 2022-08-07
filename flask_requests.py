@@ -1,4 +1,5 @@
 from pickle import GLOBAL
+from webbrowser import get
 from flask import Flask
 from flask_restful import Resource, Api, reqparse
 from flask import  request, jsonify
@@ -33,21 +34,27 @@ def start():
     r2 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=show&username={USERNAME}")
     info["captcha_id"] = r2.headers['Set-Cookie'].split(";")[0].split("=")[1]
     info["chat_id"] = chatID
-    file = open(f"{rand}.png", "wb")
+    file = open(f"./captcha/{rand}.png", "wb")
     file.write(r2.content)
     file.close()
 
     #Send captcha to bot
     data = {"chat_id": chatID}
     url = "https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw/sendPhoto" 
-    with open(f"{rand}.png", "rb") as image_file:
+    with open(f"./captcha/{rand}.png", "rb") as image_file:
         ret = requests.post(url, data=data, files={"photo": image_file})
      
     send_message("Please Enter the captcha")   
     return "DONE", 200
   
-  
 def get_all_emails():
+    login = requests.post(info["url"], data=info["payload"], headers=info["header"])
+    returned = "{" + '"MailObject" :' +  login.text[112:] 
+    returned = json.loads(returned)
+    allEmails = returned["MailObject"]
+    return allEmails
+  
+def login():
     data = {
     "action":"login",
     "username":info["username"],
@@ -72,15 +79,13 @@ def get_all_emails():
         header = {"cookie": rebuiltCookie, "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}  
         payload = {"folderId":"84729550_134979500", "start":0, "limit":50, "sort":"receivedDateUTC", "dir":"DESC", "operation":"MailList"} 
         url = "https://webmail.aut.ac.ir/api/mail/list" + h
-        login = requests.post(url, data=payload, headers=header)
-        print("login.text    ,", login.text[:150])
-        
-        returned = "{" + '"MailObject" :' +  login.text[112:] 
-        returned = json.loads(returned)
-        allEmails = returned["MailObject"]
-        print("all Emails 0 :   " ,allEmails[0])
-        return allEmails
-        
+        info["url"] = url
+        info["payload"] = payload
+        info["header"] = header
+        return "Done"
+
+
+    
 
 def send_message(text):
     f = requests.post("https://api.telegram.org/bot5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw/sendMessage" ,json={
@@ -104,8 +109,9 @@ def send_unseen_emails(allEmails, newEmailIDs):
 
 def send_emails():
     global info
-    all_emails = get_all_emails()
-    if all_emails !="None":
+    status= login()
+    if status !="None":
+        all_emails = get_all_emails()
         ids = get_email_ids(all_emails)
         newEmailIDs = list(set(ids).difference(set(info["database"])))
         info["database"] = ids
@@ -119,8 +125,7 @@ def captcha():
     info["captcha_text"] = captcha_input
     send_emails()
     return captcha_input, 200
-
-
+   
 
 if __name__ == '__main__':
     app.run(debug=True)
