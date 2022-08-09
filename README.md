@@ -1,7 +1,7 @@
 
 # AUTMail Bot
 
-Description: Telegram bot for fetching the newly received emails from Amirkabir University of Technology webmail with some cats presence for sure 🐈
+Telegram bot for fetching the newly received emails from Amirkabir University of Technology webmail with some cats presence for sure 🐈
 
 With this bot, you’ll get notified on your telegram whenever a new message pops up.
 
