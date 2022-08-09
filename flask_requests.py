@@ -72,7 +72,14 @@ def send_captcha(user,filename):
         ret = requests.post(url, data=data, files={"photo": image_file})  
     send_message(user, "Please Enter the captcha")  
     
+
+def send_sicker(user, filename):
+    data = {"chat_id": user.chat_ID}
+    url = f"https://api.telegram.org/bot{KEY}/sendSticker" 
+    with open(f"./stickers/{filename}.webp", "rb") as sticker_file:
+        ret = requests.post(url, data=data, files={"photo": sticker_file})  
     
+      
 def get_all_emails(user):
     login = requests.post(user.url, data=user.payload, headers=user.header)
     if "Set-Cookie" in dict(login.headers).keys():
@@ -95,7 +102,9 @@ def login(user):
     login = requests.post("https://webmail.aut.ac.ir/", data=data)
     if "Set-Cookie" in dict(login.headers).keys():
         send_message(user, "I GOT WRONG INFO!")
+        send_sicker(user, "wronginfo")
         send_message(user,"/newInfo - to correct your inforamtion")
+        
         return False
     else:
         h = login.text[-230:].split('src="')[1].split("&")[0]
@@ -109,6 +118,7 @@ def login(user):
         user.payload = payload
         user.header = header
         return True
+
 
 
     
