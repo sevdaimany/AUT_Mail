@@ -118,3 +118,7 @@ Run the bot
 - [@sevdaimany](https://github.com/sevdaimany)
 - [@Mortrest](https://github.com/Mortrest)
 
+
+## Show your support
+
+Give a ⭐️ if you like this project!
