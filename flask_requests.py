@@ -6,7 +6,7 @@ import requests
 import random
 import time
 import json
-from AUT_Mail.Models import User
+from Models import User
 import threading
 
 
@@ -47,6 +47,7 @@ def solve_captcha():
             captcha_input = request.json["captcha"]
             us.captcha_text = captcha_input
             status= login(us)
+            send_sicker(us,"login")
             if status:
                 t1 = threading.Thread(target = user_thread, args = (us,))
                 threads.append(t1)
@@ -77,7 +78,8 @@ def send_sicker(user, filename):
     data = {"chat_id": user.chat_ID}
     url = f"https://api.telegram.org/bot{KEY}/sendSticker" 
     with open(f"./stickers/{filename}.webp", "rb") as sticker_file:
-        ret = requests.post(url, data=data, files={"photo": sticker_file})  
+        print("hi")
+        ret = requests.post(url, data=data, files={"sticker": sticker_file})  
     
       
 def get_all_emails(user):
