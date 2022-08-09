@@ -7,7 +7,7 @@ With this bot, you’ll get notified on your telegram whenever a new message pop
 
 Meow!
 
-![Logo](https://github.com/sevdaimany/AUT_Mail/blob/master/images/logo.jpeg)
+<img src="https://github.com/sevdaimany/AUT_Mail/blob/master/images/logo.jpeg" width="220" />
 
 
 ## Installation
@@ -104,11 +104,11 @@ Run the bot
 
 ## Screenshots
 
-![App Screenshot](https://github.com/sevdaimany/AUT_Mail/blob/master/images/screenshot1.jpeg)
 
 <p float="left">
-  <img src="https://github.com/sevdaimany/AUT_Mail/blob/master/images/screenshot2.jpeg" width="200" />
-  <img src="https://github.com/sevdaimany/AUT_Mail/blob/master/images/screenshot3.jpeg" width="200" /> 
+  <img src="https://github.com/sevdaimany/AUT_Mail/blob/master/images/screenshot1.jpeg" width="220" />
+  <img src="https://github.com/sevdaimany/AUT_Mail/blob/master/images/screenshot2.jpeg" width="220" />
+  <img src="https://github.com/sevdaimany/AUT_Mail/blob/master/images/screenshot3.jpeg" width="220" /> 
 </p>
 
 
