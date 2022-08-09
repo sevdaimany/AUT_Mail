@@ -1,5 +1,5 @@
 
-# AUTMail Bot
+# 🤖 AUTMail Bot
 
 Telegram bot for fetching the newly received emails from Amirkabir University of Technology webmail with some cats presence for sure 🐈
 
