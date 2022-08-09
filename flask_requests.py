@@ -6,7 +6,7 @@ import requests
 import random
 import time
 import json
-from Models import User
+from AUT_Mail.Models import User
 import threading
 
 
