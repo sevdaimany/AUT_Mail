@@ -47,8 +47,8 @@ def solve_captcha():
             captcha_input = request.json["captcha"]
             us.captcha_text = captcha_input
             status= login(us)
-            send_sicker(us,"login")
             if status:
+                send_sicker(us,"login") 
                 t1 = threading.Thread(target = user_thread, args = (us,))
                 threads.append(t1)
                 t1.start()
@@ -143,7 +143,7 @@ def get_email_ids(allEmails):
 def send_unseen_emails(user, allEmails, newEmailIDs):
     for email in allEmails:
         if email["isSeen"] == "no" and (email["id"] in newEmailIDs):
-            text = f"👀From:\n {email['from'].split('<')[0]}\n\n📩Subject:\n {email['subject']}\n\n📃Snippet:\n {email['snippet']}\n📆Date:\n {email['date']}"
+            text = f"{email['from']}\n\n📩Subject - {email['subject']}\n\n{email['snippet'].replace('-','')}\n📆Date\n {email['date']}"
             if send_message(user, text).status_code == 200:
                 print("Message sent succesfully ", user.chat_ID)
             else:
