@@ -3,19 +3,19 @@ from flask_restful import  Api
 from flask import  request
 import requests
 import random
+import time
 import json
-from apscheduler.schedulers.background import BackgroundScheduler
-
+from Models import User
 app = Flask(__name__)
 api = Api(app)
 
 URL = "https://webmail.aut.ac.ir"
-checkIn = False
 
 with open("TOKEN.txt", 'r') as f:
     KEY = f.read()
-# KEY = "5480186611:AAExiA_7Pu6j9lYwsSbE7atcddZThEbw8Sw"
-info = {"database":[]}
+
+users = []
+
 
 @app.route('/driver', methods=["POST"])
 def start():
@@ -23,93 +23,95 @@ def start():
     USERNAME = userinfo["username"]
     PASS = userinfo["password"]
     chatID = userinfo["chatid"]
-    
-    info["username"] = USERNAME
-    info["password"] = PASS
-    info["chat_id"] = chatID
-    
+    user = User(USERNAME, PASS, chatID)
     #Get captcha from webmail
-    captcha_filename = get_captcha()
-
+    users.append(user)
+    captcha_filename = get_captcha(user)
     #Send captcha to bot
-    send_captcha(captcha_filename)
+    send_captcha(user,captcha_filename)
      
     return "DONE", 200
 
  
     
-      
+# Should provide it's chat_id in the captcha 
 @app.route('/captcha', methods=["POST"])
-def captcha():
-    captcha_input = request.json["captcha"]
-    info["captcha_text"] = captcha_input
-    send_emails()
-    return captcha_input, 200
+def solve_captcha():
+    chat_id = request.json['chatid']
+    for us in users:
+        if us.chat_ID == chat_id:
+            captcha_input = request.json["captcha"]
+            us.captcha_text = captcha_input
+            status= login(us)
+            if status:
+                user_thread(us)
+            return captcha_input, 200
+    return "Not a valid user", 400
 
-
-def get_captcha():
+def get_captcha(user):
     rand = str(random.randint(1,10000))
-    r1 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=isRequired&username={info['username']}")
-    r2 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=show&username={info['username']}")
-    info["captcha_id"] = r2.headers['Set-Cookie'].split(";")[0].split("=")[1]
+    r1 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=isRequired&username={user.username}")
+    r2 = requests.get(f"https://webmail.aut.ac.ir/captcha.hsp?action=show&username={user.username}")
+    user.captcha_id = r2.headers['Set-Cookie'].split(";")[0].split("=")[1]
     file = open(f"./captcha/{rand}.png", "wb")
     file.write(r2.content)
     file.close()
     return rand
     
-def send_captcha(filename):
-    data = {"chat_id": info["chat_id"]}
+def send_captcha(user,filename):
+    data = {"chat_id": user.chat_ID}
     url = f"https://api.telegram.org/bot{KEY}/sendPhoto" 
     with open(f"./captcha/{filename}.png", "rb") as image_file:
         ret = requests.post(url, data=data, files={"photo": image_file})  
-    send_message("Please Enter the captcha")  
+    send_message(user, "Please Enter the captcha")  
     
     
-def get_all_emails():
-    login = requests.post(info["url"], data=info["payload"], headers=info["header"])
+def get_all_emails(user):
+    login = requests.post(user.url, data=user.payload, headers=user.header)
     if "Set-Cookie" in dict(login.headers).keys():
-        return "Not login"
+        return None
     else:
         returned = "{" + '"MailObject" :' +  login.text[112:] 
         returned = json.loads(returned)
         allEmails = returned["MailObject"]
         return allEmails
   
-def login():
+def login(user):
     data = {
     "action":"login",
-    "username":info["username"],
-    "password": info["password"],
-    "captchaId":info["captcha_id"],
-    "captchaText":info["captcha_text"]
-    
+    "username":user.username,
+    "password": user.password,
+    "captchaId":user.captcha_id,
+    "captchaText":user.captcha_text
     }
     
     login = requests.post("https://webmail.aut.ac.ir/", data=data)
     if "Set-Cookie" in dict(login.headers).keys():
-        send_message("I GOT WRONG INFO!")
-        send_message("/newInfo - to correct your inforamtion")
-        return "None"
+        send_message(user, "I GOT WRONG INFO!")
+        send_message(user,"/newInfo - to correct your inforamtion")
+        return False
     else:
         h = login.text[-230:].split('src="')[1].split("&")[0]
         hmail = login.history[0].headers["Set-Cookie"].split(";")[0].split("=")[1]
-        rebuiltCookie = f"passwordExpireWarning=true;displayMoreContent=false;theme=breeze;readingPane=east;_hmail={hmail};_captchaid={info['captcha_id']};public_language=en"
+        rebuiltCookie = f"passwordExpireWarning=true;displayMoreContent=false;theme=breeze;readingPane=east;_hmail={hmail};_captchaid={user.captcha_id};public_language=en"
         header = {"cookie": rebuiltCookie, "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}  
         payload = {"folderId":"84729550_134979500", "start":0, "limit":50, "sort":"receivedDateUTC", "dir":"DESC", "operation":"MailList"} 
         url = "https://webmail.aut.ac.ir/api/mail/list" + h
-        info["url"] = url
-        info["payload"] = payload
-        info["header"] = header
-        return "Done"
+
+        user.url = url
+        user.payload = payload
+        user.header = header
+        return True
 
 
     
 
-def send_message(text):
+def send_message(user, text):
     f = requests.post(f"https://api.telegram.org/bot{KEY}/sendMessage" ,json={
-            'chat_id':info["chat_id"],
+            'chat_id':user.chat_ID,
             'text':text,
-            })
+            }, timeout=3)
+    return f
 
 def get_email_ids(allEmails):
     
@@ -119,39 +121,34 @@ def get_email_ids(allEmails):
     return ids
 
     
-def send_unseen_emails(allEmails, newEmailIDs):
+def send_unseen_emails(user, allEmails, newEmailIDs):
     for email in allEmails:
         if email["isSeen"] == "no" and (email["id"] in newEmailIDs):
             text = f"👀From:\n {email['from'].split('<')[0]}\n\n📩Subject:\n {email['subject']}\n\n📃Snippet:\n {email['snippet']}\n📆Date:\n {email['date']}"
-            send_message(text)
+            if send_message(user, text).status_code == 200:
+                print("Message sent succesfully ", user.chat_ID)
+            else:
+                print("Message was unsuccesfull ", user.chat_ID)
 
-def send_emails():
-    global info
-    status= login()
-    if status !="None":
-        all_emails = get_all_emails()
-        ids = get_email_ids(all_emails)
-        newEmailIDs = list(set(ids).difference(set(info["database"])))
-        info["database"] = ids
-        send_unseen_emails(all_emails, newEmailIDs)
-        scheduler.start()
+def user_thread(user):
+    while True:
+        all_emails = get_all_emails(user)
+        if all_emails != None:
+            ids = get_email_ids(all_emails)
+            newEmailIDs = list(set(ids).difference(set(user.messages_ID)))
+            user.messages_ID = ids
+            send_unseen_emails(user,all_emails, newEmailIDs)
+        else:
+            user.sign_out()
+            resend_captcha(user)
+            break
 
-
-def check_for_new_email():
-    all_emails = get_all_emails()
-    if all_emails == "Not login":
-        captcha_filename = get_captcha()
-        send_captcha(captcha_filename)
-    else:
-        ids = get_email_ids(all_emails)
-        newEmailIDs = list(set(ids).difference(set(info["database"])))
-        info["database"] = ids
-        send_unseen_emails(all_emails, newEmailIDs)
+        time.sleep(random.randint(40,80))
 
 
-scheduler = BackgroundScheduler()
-job = scheduler.add_job(check_for_new_email, 'interval', minutes=5)   
-    
+def resend_captcha(user):
+    captcha_filename = get_captcha(user)
+    send_captcha(user,captcha_filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

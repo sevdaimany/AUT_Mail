@@ -1,7 +1,6 @@
 #%%
 import telebot
 from telebot.types import ForceReply
-from bs4 import BeautifulSoup as bs
 import requests
 
 
@@ -10,7 +9,7 @@ with open("TOKEN.txt", 'r') as f:
 
 bot = telebot.TeleBot(KEY)
 username= ""
-password=""
+password= ""
 
 URL = "http://127.0.0.1:5000"
 
@@ -65,7 +64,9 @@ def send_unseen_emails(message, allEmails, newEmailIDs):
 @bot.message_handler(func=lambda message: True)
 def recieve_cred(message):
     user_input = message.text
-    requests.post(f"{URL}/captcha", json={"captcha":user_input})
+    if len(user_input) == 4:
+
+        r = requests.post(f"{URL}/captcha", json={"captcha":user_input, 'chatid':message.chat.id})
         
 
 
