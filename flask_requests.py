@@ -1,3 +1,4 @@
+from ast import arg
 from flask import Flask
 from flask_restful import  Api
 from flask import  request
@@ -6,6 +7,9 @@ import random
 import time
 import json
 from Models import User
+import threading
+
+
 app = Flask(__name__)
 api = Api(app)
 
@@ -15,7 +19,7 @@ with open("TOKEN.txt", 'r') as f:
     KEY = f.read()
 
 users = []
-
+threads = []
 
 @app.route('/driver', methods=["POST"])
 def start():
@@ -44,7 +48,10 @@ def solve_captcha():
             us.captcha_text = captcha_input
             status= login(us)
             if status:
-                user_thread(us)
+                t1 = threading.Thread(target = user_thread, args = (us,))
+                threads.append(t1)
+                t1.start()
+                # user_thread(us)
             return captcha_input, 200
     return "Not a valid user", 400
 
