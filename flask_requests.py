@@ -27,13 +27,21 @@ def start():
     USERNAME = userinfo["username"]
     PASS = userinfo["password"]
     chatID = userinfo["chatid"]
-    user = User(USERNAME, PASS, chatID)
     #Get captcha from webmail
-    users.append(user)
-    captcha_filename = get_captcha(user)
-    #Send captcha to bot
-    send_captcha(user,captcha_filename)
+    flag = False
+    for us in users:
+        if us.chat_ID == chatID:
+            flag = True
+            captcha_filename = get_captcha(us)
+            send_captcha(us,captcha_filename)
+            break
      
+    if flag == False:
+        user = User(USERNAME, PASS, chatID)    
+        users.append(user)
+        captcha_filename = get_captcha(user)
+        send_captcha(user,captcha_filename)
+        
     return "DONE", 200
 
  
@@ -100,6 +108,7 @@ def login(user):
     "captchaId":user.captcha_id,
     "captchaText":user.captcha_text
     }
+    print(data)
     
     login = requests.post("https://webmail.aut.ac.ir/", data=data)
     if "Set-Cookie" in dict(login.headers).keys():
